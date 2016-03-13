@@ -1,0 +1,14 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="org.xjy.android.treasure">
+
+    <application>
+
+        <provider
+            android:name=".provider.TreasureProvider"
+            android:authorities="org.xjy.android.treasure"
+            android:exported="false"
+            android:multiprocess="false" />
+
+    </application>
+
+</manifest>
