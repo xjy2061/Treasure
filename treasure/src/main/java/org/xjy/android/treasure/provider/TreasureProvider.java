@@ -31,16 +31,14 @@ public class TreasureProvider extends ContentProvider {
 
     private HashMap<String, Object[]> mListeners = new HashMap<String, Object[]>();
 
-    private static final UriMatcher sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
-
-    static {
-        sUriMatcher.addURI(TreasureContract.AUTHORITY, "*/" + TreasureContract.QUERY_GET_ALL, QUERY_GET_ALL);
-        sUriMatcher.addURI(TreasureContract.AUTHORITY, "*/" + TreasureContract.QUERY_GET, QUERY_GET);
-        sUriMatcher.addURI(TreasureContract.AUTHORITY, "*/" + TreasureContract.QUERY_CONTAINS, QUERY_CONTAINS);
-    }
+    private final UriMatcher mUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
     @Override
     public boolean onCreate() {
+        String authority = TreasureContract.getAuthority(getContext());
+        mUriMatcher.addURI(authority, "*/" + TreasureContract.QUERY_GET_ALL, QUERY_GET_ALL);
+        mUriMatcher.addURI(authority, "*/" + TreasureContract.QUERY_GET, QUERY_GET);
+        mUriMatcher.addURI(authority, "*/" + TreasureContract.QUERY_CONTAINS, QUERY_CONTAINS);
         return true;
     }
 
@@ -50,7 +48,7 @@ public class TreasureProvider extends ContentProvider {
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
         SharedPreferences sp = getContext().getSharedPreferences(uri.getPathSegments().get(0), Context.MODE_PRIVATE);
         Cursor cursor = null;
-        switch (sUriMatcher.match(uri)) {
+        switch (mUriMatcher.match(uri)) {
             case QUERY_GET:
                 int type = Integer.parseInt(sortOrder);
                 switch (type) {

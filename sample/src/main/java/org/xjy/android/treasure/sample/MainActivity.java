@@ -21,7 +21,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 //        setContentView(R.layout.activity_main);
 
-        mTreasurePreferences = new TreasurePreferences(this, "treasure");
+        mTreasurePreferences = TreasurePreferences.getInstance(this, "treasure");
         HashSet<String> ss = new HashSet<>();
         ss.add("ss");
         ss.add("sss");

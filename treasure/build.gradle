@@ -10,6 +10,8 @@ android {
         targetSdkVersion 23
         versionCode 1
         versionName "1.0.0"
+
+        resValue "string", "org_xjy_android_treasure_authority", "org.xjy.android.treasure"
     }
     buildTypes {
         release {

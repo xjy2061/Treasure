@@ -35,10 +35,22 @@ public class TreasurePreferences implements SharedPreferences {
     private static final Object mContent = new Object();
     private final WeakHashMap<OnSharedPreferenceChangeListener, Object> mListeners = new WeakHashMap<OnSharedPreferenceChangeListener, Object>();
     private BroadcastReceiver mPreferencesChangeReceiver;
+    private static HashMap<String, TreasurePreferences> sPrefers = new HashMap<String, TreasurePreferences>();
 
-    public TreasurePreferences(Context context, String name) {
+    private TreasurePreferences(Context context, String name) {
         mContext = context.getApplicationContext();
         mName = name;
+    }
+
+    public static TreasurePreferences getInstance(Context context, String name) {
+        synchronized (sPrefers) {
+            TreasurePreferences tp = sPrefers.get(name);
+            if (tp == null) {
+                tp = new TreasurePreferences(context, name);
+                sPrefers.put(name, tp);
+            }
+            return tp;
+        }
     }
 
     @Override
@@ -228,7 +240,7 @@ public class TreasurePreferences implements SharedPreferences {
     }
 
     private Uri buildUri(String path, HashMap<String, String> params) {
-        Uri.Builder builder = TreasureContract.AUTHORITY_URI.buildUpon();
+        Uri.Builder builder = TreasureContract.getAuthorityUri(mContext).buildUpon();
         builder.appendPath(mName).appendPath(path);
         if (params != null) {
             for (Map.Entry<String, String> entry : params.entrySet()) {
