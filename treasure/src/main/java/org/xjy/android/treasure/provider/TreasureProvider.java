@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.UriMatcher;
 import android.database.Cursor;
@@ -15,16 +16,20 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.xjy.android.treasure.TreasurePreferences;
 
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class TreasureProvider extends ContentProvider {
-    public static final int QUERY_GET = 1;
-    public static final int QUERY_GET_ALL = 2;
-    public static final int QUERY_CONTAINS = 3;
+    private static final int QUERY_GET = 1;
+    private static final int QUERY_GET_ALL = 2;
+    private static final int QUERY_CONTAINS = 3;
+
+    public static final String ACTION_PREFERENCES_CHANGE = "org.xjy.android.treasure.PREFERENCES_CHANGE";
+    public static final String EXTRA_KEY = "key";
+
+    private HashMap<String, Object[]> mListeners = new HashMap<String, Object[]>();
 
     private static final UriMatcher sUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
@@ -107,11 +112,42 @@ public class TreasureProvider extends ContentProvider {
     @Nullable
     @Override
     public Uri insert(Uri uri, ContentValues values) {
+        String name = uri.getPathSegments().get(0);
+        synchronized (mListeners) {
+            Object[] listenerAndCount = mListeners.get(name);
+            if (listenerAndCount == null) {
+                SharedPreferences.OnSharedPreferenceChangeListener listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+                    @Override
+                    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+                        Intent intent = new Intent(ACTION_PREFERENCES_CHANGE);
+                        intent.putExtra(EXTRA_KEY, key);
+                        getContext().sendBroadcast(intent);
+                    }
+                };
+                getContext().getSharedPreferences(name, Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(listener);
+                listenerAndCount = new Object[2];
+                listenerAndCount[0] = listener;
+                listenerAndCount[1] = 1;
+                mListeners.put(name, listenerAndCount);
+            } else {
+                listenerAndCount[1] = ((int) listenerAndCount[1]) + 1;
+            }
+        }
         return null;
     }
 
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
+        String name = uri.getPathSegments().get(0);
+        synchronized (mListeners) {
+            Object[] listenerAndCount = mListeners.get(name);
+            if (listenerAndCount != null) {
+                listenerAndCount[1] = ((int) listenerAndCount[1]) - 1;
+                if (((int) listenerAndCount[1]) == 0) {
+                    getContext().getSharedPreferences(name, Context.MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener((SharedPreferences.OnSharedPreferenceChangeListener) listenerAndCount[0]);
+                }
+            }
+        }
         return 0;
     }
 

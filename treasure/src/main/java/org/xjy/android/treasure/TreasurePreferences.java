@@ -1,7 +1,10 @@
 package org.xjy.android.treasure;
 
+import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
@@ -10,12 +13,14 @@ import android.support.annotation.Nullable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.xjy.android.treasure.provider.TreasureContract;
+import org.xjy.android.treasure.provider.TreasureProvider;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.WeakHashMap;
 
 public class TreasurePreferences implements SharedPreferences {
     public static final int TYPE_STRING = 1;
@@ -27,6 +32,9 @@ public class TreasurePreferences implements SharedPreferences {
 
     private Context mContext;
     private String mName;
+    private static final Object mContent = new Object();
+    private final WeakHashMap<OnSharedPreferenceChangeListener, Object> mListeners = new WeakHashMap<OnSharedPreferenceChangeListener, Object>();
+    private BroadcastReceiver mPreferencesChangeReceiver;
 
     public TreasurePreferences(Context context, String name) {
         mContext = context.getApplicationContext();
@@ -179,13 +187,44 @@ public class TreasurePreferences implements SharedPreferences {
     }
 
     @Override
-    public void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener) {
-        throw new UnsupportedOperationException();
+    public void registerOnSharedPreferenceChangeListener(final OnSharedPreferenceChangeListener listener) {
+        if (listener == null) {
+            return;
+        }
+        synchronized(this) {
+            mListeners.put(listener, mContent);
+            if (mListeners.size() == 1) {
+                mPreferencesChangeReceiver = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        String key = intent.getStringExtra(TreasureProvider.EXTRA_KEY);
+                        HashSet<OnSharedPreferenceChangeListener> listeners;
+                        synchronized (TreasurePreferences.this) {
+                            listeners = new HashSet<OnSharedPreferenceChangeListener>(mListeners.keySet());
+                        }
+                        for (OnSharedPreferenceChangeListener l : listeners) {
+                            l.onSharedPreferenceChanged(TreasurePreferences.this, key);
+                        }
+                    }
+                };
+                mContext.registerReceiver(mPreferencesChangeReceiver, new IntentFilter(TreasureProvider.ACTION_PREFERENCES_CHANGE));
+                mContext.getContentResolver().insert(buildUri(TreasureContract.REGISTER, null), null);
+            }
+        }
     }
 
     @Override
     public void unregisterOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener) {
-        throw new UnsupportedOperationException();
+        if (listener == null) {
+            return;
+        }
+        synchronized(this) {
+            mListeners.remove(listener);
+            if (mListeners.size() == 0) {
+                mContext.unregisterReceiver(mPreferencesChangeReceiver);
+                mContext.getContentResolver().delete(buildUri(TreasureContract.UNREGISTER, null), null, null);
+            }
+        }
     }
 
     private Uri buildUri(String path, HashMap<String, String> params) {
