@@ -9,7 +9,6 @@ import android.content.SharedPreferences;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.net.Uri;
-import android.support.annotation.Nullable;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -43,7 +42,6 @@ public class TreasureProvider extends ContentProvider {
     }
 
     @SuppressLint("NewApi")
-    @Nullable
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
         SharedPreferences sp = getContext().getSharedPreferences(uri.getPathSegments().get(0), Context.MODE_PRIVATE);
@@ -101,13 +99,11 @@ public class TreasureProvider extends ContentProvider {
         return cursor;
     }
 
-    @Nullable
     @Override
     public String getType(Uri uri) {
         return null;
     }
 
-    @Nullable
     @Override
     public Uri insert(Uri uri, ContentValues values) {
         String name = uri.getPathSegments().get(0);

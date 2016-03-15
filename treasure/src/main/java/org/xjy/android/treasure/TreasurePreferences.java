@@ -8,7 +8,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
-import android.support.annotation.Nullable;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -74,7 +73,6 @@ public class TreasurePreferences implements SharedPreferences {
         return map;
     }
 
-    @Nullable
     @Override
     public String getString(String key, String defValue) {
         Cursor cursor = null;
@@ -91,7 +89,6 @@ public class TreasurePreferences implements SharedPreferences {
         return defValue;
     }
 
-    @Nullable
     @Override
     public Set<String> getStringSet(String key, Set<String> defValues) {
         Cursor cursor = null;
