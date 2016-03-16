@@ -58,11 +58,7 @@ public class TreasureProvider extends ContentProvider {
                         Set<String> set = sp.getStringSet(projection[0], null);
                         String setJsonStr = null;
                         if (set != null) {
-                            JSONArray jsonArray = new JSONArray();
-                            for (String s : set) {
-                                jsonArray.put(s);
-                            }
-                            setJsonStr = jsonArray.toString();
+                            setJsonStr = stringSetToJSONArray(set).toString();
                         }
                         cursor = new TreasureCursor(set == null ? 0 : 1, setJsonStr);
                         break;
@@ -82,15 +78,49 @@ public class TreasureProvider extends ContentProvider {
                 break;
             case QUERY_GET_ALL:
                 Map<String, ?> map = sp.getAll();
-                JSONObject jsonObject = new JSONObject();
+                JSONObject json = new JSONObject();
                 try {
                     for (Map.Entry<String, ?> entry : map.entrySet()) {
-                        jsonObject.put(entry.getKey(), entry.getValue());
+                        String key = entry.getKey();
+                        Object value = entry.getValue();
+                        if (value == null) {
+                            json.put(key, JSONObject.NULL);
+                        } else if (value instanceof String) {
+                            JSONArray array = new JSONArray();
+                            array.put(TreasurePreferences.TYPE_STRING);
+                            array.put(value);
+                            json.put(key, array);
+                        } else if (value instanceof Set) {
+                            JSONArray array = new JSONArray();
+                            array.put(TreasurePreferences.TYPE_STRING_SET);
+                            array.put(stringSetToJSONArray((Set<String>) value));
+                            json.put(key, array);
+                        } else if (value instanceof Integer) {
+                            JSONArray array = new JSONArray();
+                            array.put(TreasurePreferences.TYPE_INT);
+                            array.put(value);
+                            json.put(key, array);
+                        } else if (value instanceof Long) {
+                            JSONArray array = new JSONArray();
+                            array.put(TreasurePreferences.TYPE_LONG);
+                            array.put(value);
+                            json.put(key, array);
+                        } else if (value instanceof Float) {
+                            JSONArray array = new JSONArray();
+                            array.put(TreasurePreferences.TYPE_FLOAT);
+                            array.put(value);
+                            json.put(key, array);
+                        } else if (value instanceof Boolean) {
+                            JSONArray array = new JSONArray();
+                            array.put(TreasurePreferences.TYPE_BOOLEAN);
+                            array.put(value);
+                            json.put(key, array);
+                        }
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-                cursor = new TreasureCursor(1, jsonObject.toString());
+                cursor = new TreasureCursor(1, json.toString());
                 break;
             case QUERY_CONTAINS:
                 cursor = new TreasureCursor(1,sp.contains(projection[0]) ? 1 : 0);
@@ -149,7 +179,7 @@ public class TreasureProvider extends ContentProvider {
     @Override
     public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
         SharedPreferences.Editor editor = getContext().getSharedPreferences(uri.getPathSegments().get(0), Context.MODE_PRIVATE).edit();
-        boolean clear = Boolean.parseBoolean(uri.getQueryParameter("clear"));
+        boolean clear = Boolean.parseBoolean(uri.getQueryParameter(TreasureContract.PARAM_CLEAR));
         if (clear) {
             editor.clear();
         }
@@ -170,21 +200,41 @@ public class TreasureProvider extends ContentProvider {
                 editor.putBoolean(key, (boolean) value);
             }
         }
-        if (selection != null) {
-            HashSet<String> set = null;
-            if (selectionArgs != null) {
-                set = new HashSet<String>();
+        if (selectionArgs != null) {
+            try {
+                JSONArray stringSetValueArray = new JSONArray(selection);
                 for (int i = 0; i < selectionArgs.length; i++) {
-                    set.add(selectionArgs[i]);
+                    editor.putStringSet(selectionArgs[i], jsonArrayToStringSet(stringSetValueArray.getJSONArray(i)));
                 }
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-            editor.putStringSet(selection, set);
         }
-        if (Boolean.parseBoolean(uri.getQueryParameter("immediately"))) {
+        if (Boolean.parseBoolean(uri.getQueryParameter(TreasureContract.PARAM_IMMEDIATELY))) {
             editor.commit();
         } else {
             editor.apply();
         }
         return 0;
+    }
+
+    public static HashSet<String> jsonArrayToStringSet(JSONArray array) {
+        HashSet<String> set = new HashSet<String>();
+        try {
+            for (int i = 0, len = array.length(); i < len; i++) {
+                set.add(array.getString(i));
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return set;
+    }
+
+    public static JSONArray stringSetToJSONArray(Set<String> set) {
+        JSONArray array = new JSONArray();
+        for (String s : set) {
+            array.put(s);
+        }
+        return array;
     }
 }

@@ -9,6 +9,7 @@ import android.support.v7.app.AppCompatActivity;
 import org.xjy.android.treasure.TreasurePreferences;
 
 import java.util.HashSet;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -30,8 +31,12 @@ public class MainActivity extends AppCompatActivity {
         mOnSharedPreferenceChangeListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
             @Override
             public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-                System.out.println(">>>change key: " + key);
-                System.out.println(">>>value:" + sharedPreferences.getAll());
+                System.out.println(">>>change key:" + key);
+                Map<String, ?> map = sharedPreferences.getAll();
+                System.out.println(">>>value:" + map);
+                for (Map.Entry<String, ?> entry : map.entrySet()) {
+                    System.out.println(">>>key:" + entry.getKey() + " value:" + entry.getValue() + " value_type:" + entry.getValue().getClass());
+                }
             }
         };
         mTreasurePreferences.registerOnSharedPreferenceChangeListener(mOnSharedPreferenceChangeListener);

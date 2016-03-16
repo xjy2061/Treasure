@@ -14,6 +14,7 @@ import org.json.JSONObject;
 import org.xjy.android.treasure.provider.TreasureContract;
 import org.xjy.android.treasure.provider.TreasureProvider;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -59,11 +60,38 @@ public class TreasurePreferences implements SharedPreferences {
         try {
             cursor = mContext.getContentResolver().query(buildUri(TreasureContract.QUERY_GET_ALL, null), null, null, null, null);
             while (cursor.moveToNext()) {
-                JSONObject jsonObject = new JSONObject(cursor.getString(0));
-                for (Iterator<String> it = jsonObject.keys(); it.hasNext();) {
+                JSONObject json = new JSONObject(cursor.getString(0));
+                for (Iterator<String> it = json.keys(); it.hasNext();) {
                     String key = it.next();
-                    map.put(key, jsonObject.get(key));
+                    if (json.isNull(key)) {
+                        map.put(key, null);
+                    } else {
+                        JSONArray array = json.getJSONArray(key);
+                        int type = array.getInt(0);
+                        switch (type) {
+                            case TreasurePreferences.TYPE_STRING:
+                                map.put(key, array.getString(1));
+                                break;
+                            case TreasurePreferences.TYPE_STRING_SET:
+                                map.put(key, TreasureProvider.jsonArrayToStringSet(array.getJSONArray(1)));
+                                break;
+                            case TreasurePreferences.TYPE_INT:
+                                map.put(key, array.getInt(1));
+                                break;
+                            case TreasurePreferences.TYPE_LONG:
+                                map.put(key, array.getLong(1));
+                                break;
+                            case TreasurePreferences.TYPE_FLOAT:
+                                float f = (float) array.getDouble(1);
+                                map.put(key, f);
+                                break;
+                            case TreasurePreferences.TYPE_BOOLEAN:
+                                map.put(key, array.getBoolean(1));
+                                break;
+                        }
+                    }
                 }
+
             }
         } catch (Throwable t) {
             t.printStackTrace();
@@ -95,12 +123,7 @@ public class TreasurePreferences implements SharedPreferences {
         try {
             cursor = mContext.getContentResolver().query(buildUri(TreasureContract.QUERY_GET, null), new String[]{key}, null, null, TYPE_STRING_SET + "");
             while (cursor.moveToNext()) {
-                HashSet<String> set = new HashSet<String>();
-                JSONArray jsonArray = new JSONArray(cursor.getString(0));
-                for (int i = 0, len = jsonArray.length(); i < len; i++) {
-                    set.add(jsonArray.getString(i));
-                }
-                return set;
+                return TreasureProvider.jsonArrayToStringSet(new JSONArray(cursor.getString(0)));
             }
         } catch (Throwable t) {
             t.printStackTrace();
@@ -337,8 +360,8 @@ public class TreasurePreferences implements SharedPreferences {
         private void update(boolean immediately) {
             synchronized (this) {
                 ContentValues contentValues = new ContentValues();
-                String stringSetKey = null;
-                String[] stringSetValue = null;
+                ArrayList<String> stringSetKeyList = new ArrayList<String>();
+                JSONArray stringSetValueArray = new JSONArray();
                 for (Map.Entry<String, Object> entry : mModified.entrySet()) {
                     String key = entry.getKey();
                     Object value = entry.getValue();
@@ -347,13 +370,8 @@ public class TreasurePreferences implements SharedPreferences {
                     } else if (value instanceof String) {
                         contentValues.put(key, (String) value);
                     } else if (value instanceof HashSet) {
-                        stringSetKey = key;
-                        HashSet<String> stringSet = (HashSet<String>) value;
-                        stringSetValue = new String[stringSet.size()];
-                        int i = 0;
-                        for (String s : stringSet) {
-                            stringSetValue[i++] = s;
-                        }
+                        stringSetKeyList.add(key);
+                        stringSetValueArray.put(TreasureProvider.stringSetToJSONArray((HashSet<String>) value));
                     } else if (value instanceof Integer) {
                         contentValues.put(key, (Integer) value);
                     } else if (value instanceof Long) {
@@ -365,9 +383,9 @@ public class TreasurePreferences implements SharedPreferences {
                     }
                 }
                 HashMap<String, String> params = new HashMap<String, String>();
-                params.put("clear", mClear + "");
-                params.put("immediately", immediately + "");
-                mContext.getContentResolver().update(buildUri(TreasureContract.UPDATE, params), contentValues, stringSetKey, stringSetValue);
+                params.put(TreasureContract.PARAM_CLEAR, mClear + "");
+                params.put(TreasureContract.PARAM_IMMEDIATELY, immediately + "");
+                mContext.getContentResolver().update(buildUri(TreasureContract.UPDATE, params), contentValues, stringSetValueArray.toString(), stringSetKeyList.size() > 0 ? stringSetKeyList.toArray(new String[stringSetKeyList.size()]) : null);
             }
         }
     }

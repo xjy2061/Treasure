@@ -10,6 +10,8 @@ public final class TreasureContract {
     public static final String QUERY_GET = "get";
     public static final String QUERY_GET_ALL = "getall";
     public static final String QUERY_CONTAINS = "contains";
+    public static final String PARAM_CLEAR = "clear";
+    public static final String PARAM_IMMEDIATELY = "immediately";
     public static final String UPDATE = "update";
     public static final String REGISTER = "register";
     public static final String UNREGISTER = "unregister";
