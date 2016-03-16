@@ -37,6 +37,12 @@ public class MainActivity extends AppCompatActivity {
                 for (Map.Entry<String, ?> entry : map.entrySet()) {
                     System.out.println(">>>key:" + entry.getKey() + " value:" + entry.getValue() + " value_type:" + entry.getValue().getClass());
                 }
+                System.out.println(">>>b:" + sharedPreferences.getBoolean("b", false));
+                System.out.println(">>>f:" + sharedPreferences.getFloat("f", 0));
+                System.out.println(">>>i:" + sharedPreferences.getInt("i", 0));
+                System.out.println(">>>l:" + sharedPreferences.getLong("l", 0));
+                System.out.println(">>>s:" + sharedPreferences.getString("s", null));
+                System.out.println(">>>ss:" + sharedPreferences.getStringSet("ss", null));
             }
         };
         mTreasurePreferences.registerOnSharedPreferenceChangeListener(mOnSharedPreferenceChangeListener);

@@ -169,6 +169,7 @@ public class TreasureProvider extends ContentProvider {
                 listenerAndCount[1] = ((int) listenerAndCount[1]) - 1;
                 if (((int) listenerAndCount[1]) == 0) {
                     getContext().getSharedPreferences(name, Context.MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener((SharedPreferences.OnSharedPreferenceChangeListener) listenerAndCount[0]);
+                    mListeners.remove(name);
                 }
             }
         }
