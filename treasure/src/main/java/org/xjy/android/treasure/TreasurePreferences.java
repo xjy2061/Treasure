@@ -1,6 +1,9 @@
 package org.xjy.android.treasure;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentProvider;
+import android.content.ContentProviderClient;
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
@@ -8,6 +11,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
+import android.util.Pair;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -32,8 +36,7 @@ public class TreasurePreferences implements SharedPreferences {
 
     private Context mContext;
     private String mName;
-    private static final Object mContent = new Object();
-    private final WeakHashMap<OnSharedPreferenceChangeListener, Object> mListeners = new WeakHashMap<OnSharedPreferenceChangeListener, Object>();
+    private final WeakHashMap<OnSharedPreferenceChangeListener, ArrayList<String>> mListeners = new WeakHashMap<OnSharedPreferenceChangeListener, ArrayList<String>>();
     private BroadcastReceiver mPreferencesChangeReceiver;
     private static HashMap<String, TreasurePreferences> sPrefers = new HashMap<String, TreasurePreferences>();
 
@@ -56,9 +59,14 @@ public class TreasurePreferences implements SharedPreferences {
     @Override
     public Map<String, ?> getAll() {
         HashMap<String, Object> map = new HashMap<String, Object>();
+        ContentProviderClient client = null;
         Cursor cursor = null;
         try {
-            cursor = mContext.getContentResolver().query(buildUri(TreasureContract.QUERY_GET_ALL, null), null, null, null, null);
+            Uri uri = buildUri(TreasureContract.QUERY_GET_ALL, null);
+            ContentResolver contentResolver = mContext.getContentResolver();
+            client = contentResolver.acquireContentProviderClient(uri);
+            ContentProvider localProvider = client.getLocalContentProvider();
+            cursor = localProvider != null ? localProvider.query(uri, null, null, null, null) : contentResolver.query(uri, null, null, null, null);
             while (cursor.moveToNext()) {
                 JSONObject json = new JSONObject(cursor.getString(0));
                 for (Iterator<String> it = json.keys(); it.hasNext();) {
@@ -97,15 +105,21 @@ public class TreasurePreferences implements SharedPreferences {
             t.printStackTrace();
         } finally {
             closeCursorSilently(cursor);
+            releaseClientSilently(client);
         }
         return map;
     }
 
     @Override
     public String getString(String key, String defValue) {
+        ContentProviderClient client = null;
         Cursor cursor = null;
         try {
-            cursor = mContext.getContentResolver().query(buildUri(TreasureContract.QUERY_GET, null), new String[]{key}, null, null, TYPE_STRING + "");
+            Uri uri = buildUri(TreasureContract.QUERY_GET, null);
+            ContentResolver contentResolver = mContext.getContentResolver();
+            client = contentResolver.acquireContentProviderClient(uri);
+            ContentProvider localProvider = client.getLocalContentProvider();
+            cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, null, null, TYPE_STRING + "") : contentResolver.query(uri, new String[]{key}, null, null, TYPE_STRING + "");
             while (cursor.moveToNext()) {
                 return cursor.getString(0);
             }
@@ -113,15 +127,21 @@ public class TreasurePreferences implements SharedPreferences {
             t.printStackTrace();
         } finally {
             closeCursorSilently(cursor);
+            releaseClientSilently(client);
         }
         return defValue;
     }
 
     @Override
     public Set<String> getStringSet(String key, Set<String> defValues) {
+        ContentProviderClient client = null;
         Cursor cursor = null;
         try {
-            cursor = mContext.getContentResolver().query(buildUri(TreasureContract.QUERY_GET, null), new String[]{key}, null, null, TYPE_STRING_SET + "");
+            Uri uri = buildUri(TreasureContract.QUERY_GET, null);
+            ContentResolver contentResolver = mContext.getContentResolver();
+            client = contentResolver.acquireContentProviderClient(uri);
+            ContentProvider localProvider = client.getLocalContentProvider();
+            cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, null, null, TYPE_STRING_SET + "") : contentResolver.query(uri, new String[]{key}, null, null, TYPE_STRING_SET + "");
             while (cursor.moveToNext()) {
                 return TreasureProvider.jsonArrayToStringSet(new JSONArray(cursor.getString(0)));
             }
@@ -129,15 +149,21 @@ public class TreasurePreferences implements SharedPreferences {
             t.printStackTrace();
         } finally {
             closeCursorSilently(cursor);
+            releaseClientSilently(client);
         }
         return defValues;
     }
 
     @Override
     public int getInt(String key, int defValue) {
+        ContentProviderClient client = null;
         Cursor cursor = null;
         try {
-            cursor = mContext.getContentResolver().query(buildUri(TreasureContract.QUERY_GET, null), new String[]{key}, defValue + "", null, TYPE_INT + "");
+            Uri uri = buildUri(TreasureContract.QUERY_GET, null);
+            ContentResolver contentResolver = mContext.getContentResolver();
+            client = contentResolver.acquireContentProviderClient(uri);
+            ContentProvider localProvider = client.getLocalContentProvider();
+            cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, defValue + "", null, TYPE_INT + "") : contentResolver.query(uri, new String[]{key}, defValue + "", null, TYPE_INT + "");
             while (cursor.moveToNext()) {
                 return cursor.getInt(0);
             }
@@ -145,15 +171,21 @@ public class TreasurePreferences implements SharedPreferences {
             t.printStackTrace();
         } finally {
             closeCursorSilently(cursor);
+            releaseClientSilently(client);
         }
         return defValue;
     }
 
     @Override
     public long getLong(String key, long defValue) {
+        ContentProviderClient client = null;
         Cursor cursor = null;
         try {
-            cursor = mContext.getContentResolver().query(buildUri(TreasureContract.QUERY_GET, null), new String[]{key}, defValue + "", null, TYPE_LONG + "");
+            Uri uri = buildUri(TreasureContract.QUERY_GET, null);
+            ContentResolver contentResolver = mContext.getContentResolver();
+            client = contentResolver.acquireContentProviderClient(uri);
+            ContentProvider localProvider = client.getLocalContentProvider();
+            cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, defValue + "", null, TYPE_LONG + "") : contentResolver.query(uri, new String[]{key}, defValue + "", null, TYPE_LONG + "");
             while (cursor.moveToNext()) {
                 return cursor.getLong(0);
             }
@@ -161,15 +193,21 @@ public class TreasurePreferences implements SharedPreferences {
             t.printStackTrace();
         } finally {
             closeCursorSilently(cursor);
+            releaseClientSilently(client);
         }
         return defValue;
     }
 
     @Override
     public float getFloat(String key, float defValue) {
+        ContentProviderClient client = null;
         Cursor cursor = null;
         try {
-            cursor = mContext.getContentResolver().query(buildUri(TreasureContract.QUERY_GET, null), new String[]{key}, defValue + "", null, TYPE_FLOAT + "");
+            Uri uri = buildUri(TreasureContract.QUERY_GET, null);
+            ContentResolver contentResolver = mContext.getContentResolver();
+            client = contentResolver.acquireContentProviderClient(uri);
+            ContentProvider localProvider = client.getLocalContentProvider();
+            cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, defValue + "", null, TYPE_FLOAT + "") : contentResolver.query(uri, new String[]{key}, defValue + "", null, TYPE_FLOAT + "");
             while (cursor.moveToNext()) {
                 return cursor.getFloat(0);
             }
@@ -177,15 +215,21 @@ public class TreasurePreferences implements SharedPreferences {
             t.printStackTrace();
         } finally {
             closeCursorSilently(cursor);
+            releaseClientSilently(client);
         }
         return defValue;
     }
 
     @Override
     public boolean getBoolean(String key, boolean defValue) {
+        ContentProviderClient client = null;
         Cursor cursor = null;
         try {
-            cursor = mContext.getContentResolver().query(buildUri(TreasureContract.QUERY_GET, null), new String[]{key}, defValue + "", null, TYPE_BOOLEAN + "");
+            Uri uri = buildUri(TreasureContract.QUERY_GET, null);
+            ContentResolver contentResolver = mContext.getContentResolver();
+            client = contentResolver.acquireContentProviderClient(uri);
+            ContentProvider localProvider = client.getLocalContentProvider();
+            cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, defValue + "", null, TYPE_BOOLEAN + "") : contentResolver.query(uri, new String[]{key}, defValue + "", null, TYPE_BOOLEAN + "");
             while (cursor.moveToNext()) {
                 return cursor.getInt(0) == 1;
             }
@@ -193,15 +237,21 @@ public class TreasurePreferences implements SharedPreferences {
             t.printStackTrace();
         } finally {
             closeCursorSilently(cursor);
+            releaseClientSilently(client);
         }
         return defValue;
     }
 
     @Override
     public boolean contains(String key) {
+        ContentProviderClient client = null;
         Cursor cursor = null;
         try {
-            cursor = mContext.getContentResolver().query(buildUri(TreasureContract.QUERY_CONTAINS, null), new String[]{key}, null, null, null);
+            Uri uri = buildUri(TreasureContract.QUERY_CONTAINS, null);
+            ContentResolver contentResolver = mContext.getContentResolver();
+            client = contentResolver.acquireContentProviderClient(uri);
+            ContentProvider localProvider = client.getLocalContentProvider();
+            cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, null, null, null) : contentResolver.query(uri, new String[]{key}, null, null, null);
             while (cursor.moveToNext()) {
                 return cursor.getInt(0) == 1;
             }
@@ -209,6 +259,7 @@ public class TreasurePreferences implements SharedPreferences {
             t.printStackTrace();
         } finally {
             closeCursorSilently(cursor);
+            releaseClientSilently(client);
         }
         return false;
     }
@@ -218,30 +269,65 @@ public class TreasurePreferences implements SharedPreferences {
         return new TreasureEditor();
     }
 
+    /**
+     * This method is expensive.
+     * You should use {@link #registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener, ArrayList keys)} instead to achieve performance.
+     * */
+    @Deprecated
     @Override
     public void registerOnSharedPreferenceChangeListener(final OnSharedPreferenceChangeListener listener) {
         if (listener == null) {
             return;
         }
-        synchronized(this) {
-            mListeners.put(listener, mContent);
-            if (mListeners.size() == 1) {
-                mPreferencesChangeReceiver = new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context context, Intent intent) {
-                        String key = intent.getStringExtra(TreasureProvider.EXTRA_KEY);
-                        HashSet<OnSharedPreferenceChangeListener> listeners;
-                        synchronized (TreasurePreferences.this) {
-                            listeners = new HashSet<OnSharedPreferenceChangeListener>(mListeners.keySet());
-                        }
-                        for (OnSharedPreferenceChangeListener l : listeners) {
-                            l.onSharedPreferenceChanged(TreasurePreferences.this, key);
-                        }
-                    }
-                };
-                mContext.registerReceiver(mPreferencesChangeReceiver, new IntentFilter(TreasureProvider.ACTION_PREFERENCES_CHANGE));
-                mContext.getContentResolver().insert(buildUri(TreasureContract.REGISTER, null), null);
+        synchronized(mListeners) {
+            mListeners.put(listener, null);
+            registerChangeReceiver();
+        }
+        ContentProviderClient client = null;
+        try {
+            Uri uri = buildUri(TreasureContract.REGISTER, null);
+            ContentResolver contentResolver = mContext.getContentResolver();
+            client = contentResolver.acquireContentProviderClient(uri);
+            ContentProvider localProvider = client.getLocalContentProvider();
+            ContentValues values = new ContentValues();
+            values.put(TreasureProvider.KEYS, (String) null);
+            if (localProvider != null) {
+                localProvider.insert(uri, values);
+            } else {
+                contentResolver.insert(uri, values);
             }
+        } finally {
+            releaseClientSilently(client);
+        }
+    }
+
+    /**
+     * @param listener The callback that will run.
+     * @param keys The keys that be listened.
+     * */
+    public void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener, ArrayList<String> keys) {
+        if (listener == null || keys == null || keys.size() == 0) {
+            return;
+        }
+        synchronized (mListeners) {
+            mListeners.put(listener, keys);
+            registerChangeReceiver();
+        }
+        ContentProviderClient client = null;
+        try {
+            Uri uri = buildUri(TreasureContract.REGISTER, null);
+            ContentResolver contentResolver = mContext.getContentResolver();
+            client = contentResolver.acquireContentProviderClient(uri);
+            ContentProvider localProvider = client.getLocalContentProvider();
+            ContentValues values = new ContentValues();
+            values.put(TreasureProvider.KEYS, new JSONArray(keys).toString());
+            if (localProvider != null) {
+                localProvider.insert(uri, values);
+            } else {
+                contentResolver.insert(uri, values);
+            }
+        } finally {
+            releaseClientSilently(client);
         }
     }
 
@@ -250,12 +336,60 @@ public class TreasurePreferences implements SharedPreferences {
         if (listener == null) {
             return;
         }
-        synchronized(this) {
-            mListeners.remove(listener);
+        String[] keys = null;
+        synchronized(mListeners) {
+            ArrayList<String> keyList = mListeners.remove(listener);
+            if (keyList != null) {
+                keys = keyList.toArray(new String[keyList.size()]);
+            }
             if (mListeners.size() == 0) {
                 mContext.unregisterReceiver(mPreferencesChangeReceiver);
-                mContext.getContentResolver().delete(buildUri(TreasureContract.UNREGISTER, null), null, null);
             }
+        }
+        ContentProviderClient client = null;
+        try {
+            Uri uri = buildUri(TreasureContract.UNREGISTER, null);
+            ContentResolver contentResolver = mContext.getContentResolver();
+            client = contentResolver.acquireContentProviderClient(uri);
+            ContentProvider localProvider = client.getLocalContentProvider();
+            if (localProvider != null) {
+                localProvider.delete(uri, null, keys);
+            } else {
+                contentResolver.delete(uri, null, keys);
+            }
+        } finally {
+            releaseClientSilently(client);
+        }
+    }
+
+    private void registerChangeReceiver() {
+        if (mPreferencesChangeReceiver == null) {
+            mPreferencesChangeReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    String name = intent.getStringExtra(TreasureProvider.EXTRA_NAME);
+                    if (mName.equals(name)) {
+                        ArrayList<String> modifiedKeys = (ArrayList<String>) intent.getSerializableExtra(TreasureProvider.EXTRA_KEYS);
+                        ArrayList<Pair<OnSharedPreferenceChangeListener, String>> listeners = new ArrayList<Pair<OnSharedPreferenceChangeListener, String>>();
+                        synchronized (mListeners) {
+                            for (Map.Entry<OnSharedPreferenceChangeListener, ArrayList<String>> entry : mListeners.entrySet()) {
+                                ArrayList<String> keys = entry.getValue();
+                                for (int i = modifiedKeys.size() - 1; i >= 0; i--) {
+                                    String key = modifiedKeys.get(i);
+                                    if (keys == null || keys.contains(key)) {
+                                        listeners.add(new Pair<OnSharedPreferenceChangeListener, String>(entry.getKey(), key));
+                                    }
+                                }
+                            }
+                        }
+                        for (int i = listeners.size() - 1; i >= 0; i--) {
+                            Pair<OnSharedPreferenceChangeListener, String> pair = listeners.get(i);
+                            pair.first.onSharedPreferenceChanged(TreasurePreferences.this, pair.second);
+                        }
+                    }
+                }
+            };
+            mContext.registerReceiver(mPreferencesChangeReceiver, new IntentFilter(TreasureProvider.ACTION_PREFERENCES_CHANGE));
         }
     }
 
@@ -274,6 +408,14 @@ public class TreasurePreferences implements SharedPreferences {
         if (cursor != null) {
             try {
                 cursor.close();
+            } catch (Throwable t) {}
+        }
+    }
+
+    private void releaseClientSilently(ContentProviderClient client) {
+        if (client != null) {
+            try {
+                client.release();
             } catch (Throwable t) {}
         }
     }
@@ -382,10 +524,23 @@ public class TreasurePreferences implements SharedPreferences {
                         contentValues.put(key, (Boolean) value);
                     }
                 }
-                HashMap<String, String> params = new HashMap<String, String>();
-                params.put(TreasureContract.PARAM_CLEAR, mClear + "");
-                params.put(TreasureContract.PARAM_IMMEDIATELY, immediately + "");
-                mContext.getContentResolver().update(buildUri(TreasureContract.UPDATE, params), contentValues, stringSetValueArray.toString(), stringSetKeyList.size() > 0 ? stringSetKeyList.toArray(new String[stringSetKeyList.size()]) : null);
+                ContentProviderClient client = null;
+                try {
+                    HashMap<String, String> params = new HashMap<String, String>();
+                    params.put(TreasureContract.PARAM_CLEAR, mClear + "");
+                    params.put(TreasureContract.PARAM_IMMEDIATELY, immediately + "");
+                    Uri uri = buildUri(TreasureContract.UPDATE, params);
+                    ContentResolver contentResolver = mContext.getContentResolver();
+                    client = contentResolver.acquireContentProviderClient(uri);
+                    ContentProvider localProvider = client.getLocalContentProvider();
+                    if (localProvider != null) {
+                        localProvider.update(uri, contentValues, stringSetValueArray.toString(), stringSetKeyList.size() > 0 ? stringSetKeyList.toArray(new String[stringSetKeyList.size()]) : null);
+                    } else {
+                        contentResolver.update(uri, contentValues, stringSetValueArray.toString(), stringSetKeyList.size() > 0 ? stringSetKeyList.toArray(new String[stringSetKeyList.size()]) : null);
+                    }
+                } finally {
+                    releaseClientSilently(client);
+                }
             }
         }
     }

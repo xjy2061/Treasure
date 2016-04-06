@@ -17,7 +17,7 @@ public final class TreasureContract {
     public static final String UNREGISTER = "unregister";
 
     private static String sAuthority;
-    public static Uri sAuthorityUri;
+    private static Uri sAuthorityUri;
 
     public static String getAuthority(Context context) {
         if (TextUtils.isEmpty(sAuthority)) {

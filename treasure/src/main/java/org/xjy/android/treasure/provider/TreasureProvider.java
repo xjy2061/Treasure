@@ -9,12 +9,14 @@ import android.content.SharedPreferences;
 import android.content.UriMatcher;
 import android.database.Cursor;
 import android.net.Uri;
+import android.text.TextUtils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.xjy.android.treasure.TreasurePreferences;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -26,9 +28,12 @@ public class TreasureProvider extends ContentProvider {
     private static final int QUERY_CONTAINS = 3;
 
     public static final String ACTION_PREFERENCES_CHANGE = "org.xjy.android.treasure.PREFERENCES_CHANGE";
-    public static final String EXTRA_KEY = "key";
+    public static final String EXTRA_NAME = "name";
+    public static final String EXTRA_KEYS = "keys";
 
-    private HashMap<String, Object[]> mListeners = new HashMap<String, Object[]>();
+    public static final String KEYS = "keys";
+
+    private final HashMap<String, HashMap<String, Integer>> mListeners = new HashMap<String, HashMap<String, Integer>>();
 
     private final UriMatcher mUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
@@ -137,25 +142,44 @@ public class TreasureProvider extends ContentProvider {
     @Override
     public Uri insert(Uri uri, ContentValues values) {
         String name = uri.getPathSegments().get(0);
-        synchronized (mListeners) {
-            Object[] listenerAndCount = mListeners.get(name);
-            if (listenerAndCount == null) {
-                SharedPreferences.OnSharedPreferenceChangeListener listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
-                    @Override
-                    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-                        Intent intent = new Intent(ACTION_PREFERENCES_CHANGE);
-                        intent.putExtra(EXTRA_KEY, key);
-                        getContext().sendBroadcast(intent);
+        String keys = values.getAsString(KEYS);
+        try {
+            JSONArray keyArray = TextUtils.isEmpty(keys) ? null : new JSONArray(keys);
+            synchronized (mListeners) {
+                HashMap<String, Integer> listeners = mListeners.get(name);
+                if (listeners == null) {
+                    listeners = new HashMap<String, Integer>();
+                    if (keyArray == null) {
+                        listeners.put(null, 1);
+                    } else {
+                        for (int i = keyArray.length() - 1; i >= 0; i--) {
+                            listeners.put(keyArray.getString(i), 1);
+                        }
                     }
-                };
-                getContext().getSharedPreferences(name, Context.MODE_PRIVATE).registerOnSharedPreferenceChangeListener(listener);
-                listenerAndCount = new Object[2];
-                listenerAndCount[0] = listener;
-                listenerAndCount[1] = 1;
-                mListeners.put(name, listenerAndCount);
-            } else {
-                listenerAndCount[1] = ((int) listenerAndCount[1]) + 1;
+                    mListeners.put(name, listeners);
+                } else {
+                    if (keyArray == null) {
+                        Integer count = listeners.get(null);
+                        if (count == null) {
+                            listeners.put(null, 1);
+                        } else {
+                            listeners.put(null, count + 1);
+                        }
+                    } else {
+                        for (int i = keyArray.length() - 1; i >=0; i--) {
+                            String key = keyArray.getString(i);
+                            Integer count = listeners.get(key);
+                            if (count == null) {
+                                listeners.put(key, 1);
+                            } else {
+                                listeners.put(key, count + 1);
+                            }
+                        }
+                    }
+                }
             }
+        } catch (JSONException e) {
+            e.printStackTrace();
         }
         return null;
     }
@@ -164,11 +188,21 @@ public class TreasureProvider extends ContentProvider {
     public int delete(Uri uri, String selection, String[] selectionArgs) {
         String name = uri.getPathSegments().get(0);
         synchronized (mListeners) {
-            Object[] listenerAndCount = mListeners.get(name);
-            if (listenerAndCount != null) {
-                listenerAndCount[1] = ((int) listenerAndCount[1]) - 1;
-                if (((int) listenerAndCount[1]) == 0) {
-                    getContext().getSharedPreferences(name, Context.MODE_PRIVATE).unregisterOnSharedPreferenceChangeListener((SharedPreferences.OnSharedPreferenceChangeListener) listenerAndCount[0]);
+            HashMap<String, Integer> listeners = mListeners.get(name);
+            if (listeners != null) {
+                String[] keys = selectionArgs == null ? new String[]{null} : selectionArgs;
+                for (String key : keys) {
+                    Integer count = listeners.get(key);
+                    if (count != null) {
+                        count = count - 1;
+                        if (count > 0) {
+                            listeners.put(key, count);
+                        } else {
+                            listeners.remove(key);
+                        }
+                    }
+                }
+                if (listeners.size() == 0) {
                     mListeners.remove(name);
                 }
             }
@@ -179,11 +213,13 @@ public class TreasureProvider extends ContentProvider {
     @SuppressLint("NewApi")
     @Override
     public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
-        SharedPreferences.Editor editor = getContext().getSharedPreferences(uri.getPathSegments().get(0), Context.MODE_PRIVATE).edit();
+        String name = uri.getPathSegments().get(0);
+        SharedPreferences.Editor editor = getContext().getSharedPreferences(name, Context.MODE_PRIVATE).edit();
         boolean clear = Boolean.parseBoolean(uri.getQueryParameter(TreasureContract.PARAM_CLEAR));
         if (clear) {
             editor.clear();
         }
+        ArrayList<String> modifiedKeys = new ArrayList<String>();
         for (Map.Entry<String, Object> entry : values.valueSet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
@@ -200,12 +236,14 @@ public class TreasureProvider extends ContentProvider {
             } else if (value instanceof Boolean) {
                 editor.putBoolean(key, (boolean) value);
             }
+            modifiedKeys.add(key);
         }
         if (selectionArgs != null) {
             try {
                 JSONArray stringSetValueArray = new JSONArray(selection);
                 for (int i = 0; i < selectionArgs.length; i++) {
                     editor.putStringSet(selectionArgs[i], jsonArrayToStringSet(stringSetValueArray.getJSONArray(i)));
+                    modifiedKeys.add(selectionArgs[i]);
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
@@ -216,13 +254,36 @@ public class TreasureProvider extends ContentProvider {
         } else {
             editor.apply();
         }
+
+        //notify listeners
+        if (modifiedKeys.size() > 0) {
+            HashSet<String> keySet = null;
+            synchronized (mListeners) {
+                HashMap<String, Integer> listeners = mListeners.get(name);
+                if (listeners != null) {
+                    keySet = new HashSet<String>(listeners.keySet());
+                }
+            }
+            if (keySet != null) {
+                if (!keySet.contains(null)) {
+                    modifiedKeys.retainAll(keySet);
+                }
+                if (modifiedKeys.size() > 0) {
+                    Intent intent = new Intent(ACTION_PREFERENCES_CHANGE);
+                    intent.putExtra(EXTRA_NAME, name);
+                    intent.putExtra(EXTRA_KEYS, modifiedKeys);
+                    getContext().sendBroadcast(intent);
+                }
+            }
+        }
+
         return 0;
     }
 
     public static HashSet<String> jsonArrayToStringSet(JSONArray array) {
         HashSet<String> set = new HashSet<String>();
         try {
-            for (int i = 0, len = array.length(); i < len; i++) {
+            for (int i = array.length() - 1; i >= 0; i--) {
                 set.add(array.getString(i));
             }
         } catch (JSONException e) {
