@@ -2,17 +2,18 @@ apply plugin: 'com.android.library'
 apply plugin: 'maven'
 
 android {
-    compileSdkVersion 23
-    buildToolsVersion "23.0.3"
+    compileSdkVersion 24
+    buildToolsVersion "24.0.3"
 
     defaultConfig {
         minSdkVersion 9
-        targetSdkVersion 23
+        targetSdkVersion 24
         versionCode 1
         versionName "1.0.0"
 
         resValue "string", "org_xjy_android_treasure_authority", "org.xjy.android.treasure"
     }
+
     buildTypes {
         release {
             minifyEnabled false

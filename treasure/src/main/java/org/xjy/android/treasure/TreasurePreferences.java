@@ -27,6 +27,9 @@ import java.util.Set;
 import java.util.WeakHashMap;
 
 public class TreasurePreferences implements SharedPreferences {
+    public static final int MODE_DEFAULT = 0;
+    public static final int MODE_IN_MEMORY = 1;
+
     public static final int TYPE_STRING = 1;
     public static final int TYPE_STRING_SET = 2;
     public static final int TYPE_INT = 3;
@@ -36,20 +39,26 @@ public class TreasurePreferences implements SharedPreferences {
 
     private Context mContext;
     private String mName;
-    private final WeakHashMap<OnSharedPreferenceChangeListener, ArrayList<String>> mListeners = new WeakHashMap<OnSharedPreferenceChangeListener, ArrayList<String>>();
+    private int mMode;
+    private final WeakHashMap<OnSharedPreferenceChangeListener, ArrayList<String>> mListeners = new WeakHashMap<>();
     private BroadcastReceiver mPreferencesChangeReceiver;
-    private static HashMap<String, TreasurePreferences> sPrefers = new HashMap<String, TreasurePreferences>();
+    private static final HashMap<String, TreasurePreferences> sPrefers = new HashMap<>();
 
-    private TreasurePreferences(Context context, String name) {
+    private TreasurePreferences(Context context, String name, int mode) {
         mContext = context.getApplicationContext();
         mName = name;
+        mMode = mode;
     }
 
     public static TreasurePreferences getInstance(Context context, String name) {
+        return getInstance(context, name, MODE_DEFAULT);
+    }
+
+    public static TreasurePreferences getInstance(Context context, String name, int mode) {
         synchronized (sPrefers) {
             TreasurePreferences tp = sPrefers.get(name);
             if (tp == null) {
-                tp = new TreasurePreferences(context, name);
+                tp = new TreasurePreferences(context, name, mode);
                 sPrefers.put(name, tp);
             }
             return tp;
@@ -58,7 +67,7 @@ public class TreasurePreferences implements SharedPreferences {
 
     @Override
     public Map<String, ?> getAll() {
-        HashMap<String, Object> map = new HashMap<String, Object>();
+        HashMap<String, Object> map = new HashMap<>();
         ContentProviderClient client = null;
         Cursor cursor = null;
         try {
@@ -67,39 +76,40 @@ public class TreasurePreferences implements SharedPreferences {
             client = contentResolver.acquireContentProviderClient(uri);
             ContentProvider localProvider = client.getLocalContentProvider();
             cursor = localProvider != null ? localProvider.query(uri, null, null, null, null) : contentResolver.query(uri, null, null, null, null);
-            while (cursor.moveToNext()) {
-                JSONObject json = new JSONObject(cursor.getString(0));
-                for (Iterator<String> it = json.keys(); it.hasNext();) {
-                    String key = it.next();
-                    if (json.isNull(key)) {
-                        map.put(key, null);
-                    } else {
-                        JSONArray array = json.getJSONArray(key);
-                        int type = array.getInt(0);
-                        switch (type) {
-                            case TreasurePreferences.TYPE_STRING:
-                                map.put(key, array.getString(1));
-                                break;
-                            case TreasurePreferences.TYPE_STRING_SET:
-                                map.put(key, TreasureProvider.jsonArrayToStringSet(array.getJSONArray(1)));
-                                break;
-                            case TreasurePreferences.TYPE_INT:
-                                map.put(key, array.getInt(1));
-                                break;
-                            case TreasurePreferences.TYPE_LONG:
-                                map.put(key, array.getLong(1));
-                                break;
-                            case TreasurePreferences.TYPE_FLOAT:
-                                float f = (float) array.getDouble(1);
-                                map.put(key, f);
-                                break;
-                            case TreasurePreferences.TYPE_BOOLEAN:
-                                map.put(key, array.getBoolean(1));
-                                break;
+            if (cursor != null) {
+                while (cursor.moveToNext()) {
+                    JSONObject json = new JSONObject(cursor.getString(0));
+                    for (Iterator<String> it = json.keys(); it.hasNext();) {
+                        String key = it.next();
+                        if (json.isNull(key)) {
+                            map.put(key, null);
+                        } else {
+                            JSONArray array = json.getJSONArray(key);
+                            int type = array.getInt(0);
+                            switch (type) {
+                                case TreasurePreferences.TYPE_STRING:
+                                    map.put(key, array.getString(1));
+                                    break;
+                                case TreasurePreferences.TYPE_STRING_SET:
+                                    map.put(key, TreasureProvider.jsonArrayToStringSet(array.getJSONArray(1)));
+                                    break;
+                                case TreasurePreferences.TYPE_INT:
+                                    map.put(key, array.getInt(1));
+                                    break;
+                                case TreasurePreferences.TYPE_LONG:
+                                    map.put(key, array.getLong(1));
+                                    break;
+                                case TreasurePreferences.TYPE_FLOAT:
+                                    float f = (float) array.getDouble(1);
+                                    map.put(key, f);
+                                    break;
+                                case TreasurePreferences.TYPE_BOOLEAN:
+                                    map.put(key, array.getBoolean(1));
+                                    break;
+                            }
                         }
                     }
                 }
-
             }
         } catch (Throwable t) {
             t.printStackTrace();
@@ -120,7 +130,7 @@ public class TreasurePreferences implements SharedPreferences {
             client = contentResolver.acquireContentProviderClient(uri);
             ContentProvider localProvider = client.getLocalContentProvider();
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, null, null, TYPE_STRING + "") : contentResolver.query(uri, new String[]{key}, null, null, TYPE_STRING + "");
-            while (cursor.moveToNext()) {
+            if (cursor != null && cursor.moveToNext()) {
                 return cursor.getString(0);
             }
         } catch (Throwable t) {
@@ -142,7 +152,7 @@ public class TreasurePreferences implements SharedPreferences {
             client = contentResolver.acquireContentProviderClient(uri);
             ContentProvider localProvider = client.getLocalContentProvider();
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, null, null, TYPE_STRING_SET + "") : contentResolver.query(uri, new String[]{key}, null, null, TYPE_STRING_SET + "");
-            while (cursor.moveToNext()) {
+            if (cursor != null && cursor.moveToNext()) {
                 return TreasureProvider.jsonArrayToStringSet(new JSONArray(cursor.getString(0)));
             }
         } catch (Throwable t) {
@@ -164,7 +174,7 @@ public class TreasurePreferences implements SharedPreferences {
             client = contentResolver.acquireContentProviderClient(uri);
             ContentProvider localProvider = client.getLocalContentProvider();
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, defValue + "", null, TYPE_INT + "") : contentResolver.query(uri, new String[]{key}, defValue + "", null, TYPE_INT + "");
-            while (cursor.moveToNext()) {
+            if (cursor != null && cursor.moveToNext()) {
                 return cursor.getInt(0);
             }
         } catch (Throwable t) {
@@ -186,7 +196,7 @@ public class TreasurePreferences implements SharedPreferences {
             client = contentResolver.acquireContentProviderClient(uri);
             ContentProvider localProvider = client.getLocalContentProvider();
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, defValue + "", null, TYPE_LONG + "") : contentResolver.query(uri, new String[]{key}, defValue + "", null, TYPE_LONG + "");
-            while (cursor.moveToNext()) {
+            if (cursor != null && cursor.moveToNext()) {
                 return cursor.getLong(0);
             }
         } catch (Throwable t) {
@@ -208,7 +218,7 @@ public class TreasurePreferences implements SharedPreferences {
             client = contentResolver.acquireContentProviderClient(uri);
             ContentProvider localProvider = client.getLocalContentProvider();
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, defValue + "", null, TYPE_FLOAT + "") : contentResolver.query(uri, new String[]{key}, defValue + "", null, TYPE_FLOAT + "");
-            while (cursor.moveToNext()) {
+            if (cursor != null && cursor.moveToNext()) {
                 return cursor.getFloat(0);
             }
         } catch (Throwable t) {
@@ -230,7 +240,7 @@ public class TreasurePreferences implements SharedPreferences {
             client = contentResolver.acquireContentProviderClient(uri);
             ContentProvider localProvider = client.getLocalContentProvider();
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, defValue + "", null, TYPE_BOOLEAN + "") : contentResolver.query(uri, new String[]{key}, defValue + "", null, TYPE_BOOLEAN + "");
-            while (cursor.moveToNext()) {
+            if (cursor != null && cursor.moveToNext()) {
                 return cursor.getInt(0) == 1;
             }
         } catch (Throwable t) {
@@ -252,7 +262,7 @@ public class TreasurePreferences implements SharedPreferences {
             client = contentResolver.acquireContentProviderClient(uri);
             ContentProvider localProvider = client.getLocalContentProvider();
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, null, null, null) : contentResolver.query(uri, new String[]{key}, null, null, null);
-            while (cursor.moveToNext()) {
+            if (cursor != null && cursor.moveToNext()) {
                 return cursor.getInt(0) == 1;
             }
         } catch (Throwable t) {
@@ -370,14 +380,14 @@ public class TreasurePreferences implements SharedPreferences {
                     String name = intent.getStringExtra(TreasureProvider.EXTRA_NAME);
                     if (mName.equals(name)) {
                         ArrayList<String> modifiedKeys = (ArrayList<String>) intent.getSerializableExtra(TreasureProvider.EXTRA_KEYS);
-                        ArrayList<Pair<OnSharedPreferenceChangeListener, String>> listeners = new ArrayList<Pair<OnSharedPreferenceChangeListener, String>>();
+                        ArrayList<Pair<OnSharedPreferenceChangeListener, String>> listeners = new ArrayList<>();
                         synchronized (mListeners) {
                             for (Map.Entry<OnSharedPreferenceChangeListener, ArrayList<String>> entry : mListeners.entrySet()) {
                                 ArrayList<String> keys = entry.getValue();
                                 for (int i = modifiedKeys.size() - 1; i >= 0; i--) {
                                     String key = modifiedKeys.get(i);
                                     if (keys == null || keys.contains(key)) {
-                                        listeners.add(new Pair<OnSharedPreferenceChangeListener, String>(entry.getKey(), key));
+                                        listeners.add(new Pair<>(entry.getKey(), key));
                                     }
                                 }
                             }
@@ -395,7 +405,7 @@ public class TreasurePreferences implements SharedPreferences {
 
     private Uri buildUri(String path, HashMap<String, String> params) {
         Uri.Builder builder = TreasureContract.getAuthorityUri(mContext).buildUpon();
-        builder.appendPath(mName).appendPath(path);
+        builder.appendPath(mName).appendPath(mMode + "").appendPath(path);
         if (params != null) {
             for (Map.Entry<String, String> entry : params.entrySet()) {
                 builder.appendQueryParameter(entry.getKey(), entry.getValue());
@@ -408,7 +418,7 @@ public class TreasurePreferences implements SharedPreferences {
         if (cursor != null) {
             try {
                 cursor.close();
-            } catch (Throwable t) {}
+            } catch (Throwable ignored) {}
         }
     }
 
@@ -416,12 +426,12 @@ public class TreasurePreferences implements SharedPreferences {
         if (client != null) {
             try {
                 client.release();
-            } catch (Throwable t) {}
+            } catch (Throwable ignored) {}
         }
     }
 
     public final class TreasureEditor implements Editor {
-        private final Map<String, Object> mModified = new HashMap<String, Object>();
+        private final Map<String, Object> mModified = new HashMap<>();
         private boolean mClear = false;
 
         @Override
@@ -435,7 +445,7 @@ public class TreasurePreferences implements SharedPreferences {
         @Override
         public Editor putStringSet(String key, Set<String> values) {
             synchronized (this) {
-                mModified.put(key, (values == null) ? null : new HashSet<String>(values));
+                mModified.put(key, (values == null) ? null : new HashSet<>(values));
                 return this;
             }
         }
@@ -502,7 +512,7 @@ public class TreasurePreferences implements SharedPreferences {
         private void update(boolean immediately) {
             synchronized (this) {
                 ContentValues contentValues = new ContentValues();
-                ArrayList<String> stringSetKeyList = new ArrayList<String>();
+                ArrayList<String> stringSetKeyList = new ArrayList<>();
                 JSONArray stringSetValueArray = new JSONArray();
                 for (Map.Entry<String, Object> entry : mModified.entrySet()) {
                     String key = entry.getKey();
@@ -526,7 +536,7 @@ public class TreasurePreferences implements SharedPreferences {
                 }
                 ContentProviderClient client = null;
                 try {
-                    HashMap<String, String> params = new HashMap<String, String>();
+                    HashMap<String, String> params = new HashMap<>();
                     params.put(TreasureContract.PARAM_CLEAR, mClear + "");
                     params.put(TreasureContract.PARAM_IMMEDIATELY, immediately + "");
                     Uri uri = buildUri(TreasureContract.UPDATE, params);

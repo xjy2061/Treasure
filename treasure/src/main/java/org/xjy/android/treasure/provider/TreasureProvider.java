@@ -19,6 +19,7 @@ import org.xjy.android.treasure.TreasurePreferences;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -33,34 +34,48 @@ public class TreasureProvider extends ContentProvider {
 
     public static final String KEYS = "keys";
 
-    private final HashMap<String, HashMap<String, Integer>> mListeners = new HashMap<String, HashMap<String, Integer>>();
+    private HashMap<String, HashMap<String, Object>> mMemoryStorage;
+
+    private final HashMap<String, HashMap<String, Integer>> mListeners = new HashMap<>();
 
     private final UriMatcher mUriMatcher = new UriMatcher(UriMatcher.NO_MATCH);
 
     @Override
     public boolean onCreate() {
         String authority = TreasureContract.getAuthority(getContext());
-        mUriMatcher.addURI(authority, "*/" + TreasureContract.QUERY_GET_ALL, QUERY_GET_ALL);
-        mUriMatcher.addURI(authority, "*/" + TreasureContract.QUERY_GET, QUERY_GET);
-        mUriMatcher.addURI(authority, "*/" + TreasureContract.QUERY_CONTAINS, QUERY_CONTAINS);
+        mUriMatcher.addURI(authority, "*/*/" + TreasureContract.QUERY_GET_ALL, QUERY_GET_ALL);
+        mUriMatcher.addURI(authority, "*/*/" + TreasureContract.QUERY_GET, QUERY_GET);
+        mUriMatcher.addURI(authority, "*/*/" + TreasureContract.QUERY_CONTAINS, QUERY_CONTAINS);
         return true;
     }
 
     @SuppressLint("NewApi")
     @Override
     public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
-        SharedPreferences sp = getContext().getSharedPreferences(uri.getPathSegments().get(0), Context.MODE_PRIVATE);
         Cursor cursor = null;
+        List<String> paths = uri.getPathSegments();
+        String name = paths.get(0);
+        boolean inMemory = Integer.parseInt(paths.get(1)) == TreasurePreferences.MODE_IN_MEMORY;
         switch (mUriMatcher.match(uri)) {
             case QUERY_GET:
                 int type = Integer.parseInt(sortOrder);
                 switch (type) {
                     case TreasurePreferences.TYPE_STRING:
-                        String string = sp.getString(projection[0], null);
+                        String string;
+                        if (inMemory) {
+                            string = (String) getMemoryPreferences(name).get(projection[0]);
+                        } else {
+                            string = getContext().getSharedPreferences(name, Context.MODE_PRIVATE).getString(projection[0], null);
+                        }
                         cursor = new TreasureCursor(string == null ? 0 : 1, string);
                         break;
                     case TreasurePreferences.TYPE_STRING_SET:
-                        Set<String> set = sp.getStringSet(projection[0], null);
+                        Set<String> set;
+                        if (inMemory) {
+                            set = (Set<String>) getMemoryPreferences(name).get(projection[0]);
+                        } else {
+                            set = getContext().getSharedPreferences(name, Context.MODE_PRIVATE).getStringSet(projection[0], null);
+                        }
                         String setJsonStr = null;
                         if (set != null) {
                             setJsonStr = stringSetToJSONArray(set).toString();
@@ -68,21 +83,49 @@ public class TreasureProvider extends ContentProvider {
                         cursor = new TreasureCursor(set == null ? 0 : 1, setJsonStr);
                         break;
                     case TreasurePreferences.TYPE_INT:
-                        cursor = new TreasureCursor(1, sp.getInt(projection[0], Integer.parseInt(selection)));
+                        int intVal;
+                        if (inMemory) {
+                            Object valObj = getMemoryPreferences(name).get(projection[0]);
+                            intVal = valObj == null ?  Integer.parseInt(selection) : (int) valObj;
+                        } else {
+                            intVal = getContext().getSharedPreferences(name, Context.MODE_PRIVATE).getInt(projection[0], Integer.parseInt(selection));
+                        }
+                        cursor = new TreasureCursor(1, intVal);
                         break;
                     case TreasurePreferences.TYPE_LONG:
-                        cursor = new TreasureCursor(1, sp.getLong(projection[0], Long.parseLong(selection)));
+                        long longVal;
+                        if (inMemory) {
+                            Object valObj = getMemoryPreferences(name).get(projection[0]);
+                            longVal = valObj == null ? Long.parseLong(selection) : (long) valObj;
+                        } else {
+                            longVal = getContext().getSharedPreferences(name, Context.MODE_PRIVATE).getLong(projection[0], Long.parseLong(selection));
+                        }
+                        cursor = new TreasureCursor(1, longVal);
                         break;
                     case TreasurePreferences.TYPE_FLOAT:
-                        cursor = new TreasureCursor(1, sp.getFloat(projection[0], Float.parseFloat(selection)));
+                        float floatVal;
+                        if (inMemory) {
+                            Object valObj = getMemoryPreferences(name).get(projection[0]);
+                            floatVal = valObj == null ? Float.parseFloat(selection) : (float) valObj;
+                        } else {
+                            floatVal = getContext().getSharedPreferences(name, Context.MODE_PRIVATE).getFloat(projection[0], Float.parseFloat(selection));
+                        }
+                        cursor = new TreasureCursor(1, floatVal);
                         break;
                     case TreasurePreferences.TYPE_BOOLEAN:
-                        cursor = new TreasureCursor(1, sp.getBoolean(projection[0], Boolean.parseBoolean(selection)) ? 1 : 0);
+                        boolean booleanVal;
+                        if (inMemory) {
+                            Object valObj = getMemoryPreferences(name).get(projection[0]);
+                            booleanVal = valObj == null ? Boolean.parseBoolean(selection) : (boolean) valObj;
+                        } else {
+                            booleanVal = getContext().getSharedPreferences(name, Context.MODE_PRIVATE).getBoolean(projection[0], Boolean.parseBoolean(selection));
+                        }
+                        cursor = new TreasureCursor(1, booleanVal ? 1 : 0);
                         break;
                 }
                 break;
             case QUERY_GET_ALL:
-                Map<String, ?> map = sp.getAll();
+                Map<String, ?> map = inMemory ? getMemoryPreferences(name) : getContext().getSharedPreferences(name, Context.MODE_PRIVATE).getAll();
                 JSONObject json = new JSONObject();
                 try {
                     for (Map.Entry<String, ?> entry : map.entrySet()) {
@@ -128,7 +171,8 @@ public class TreasureProvider extends ContentProvider {
                 cursor = new TreasureCursor(1, json.toString());
                 break;
             case QUERY_CONTAINS:
-                cursor = new TreasureCursor(1,sp.contains(projection[0]) ? 1 : 0);
+                cursor = new TreasureCursor(1, (inMemory ? getMemoryPreferences(name).containsKey(projection[0])
+                        : getContext().getSharedPreferences(name, Context.MODE_PRIVATE).contains(projection[0])) ? 1 : 0);
                 break;
         }
         return cursor;
@@ -148,7 +192,7 @@ public class TreasureProvider extends ContentProvider {
             synchronized (mListeners) {
                 HashMap<String, Integer> listeners = mListeners.get(name);
                 if (listeners == null) {
-                    listeners = new HashMap<String, Integer>();
+                    listeners = new HashMap<>();
                     if (keyArray == null) {
                         listeners.put(null, 1);
                     } else {
@@ -213,28 +257,48 @@ public class TreasureProvider extends ContentProvider {
     @SuppressLint("NewApi")
     @Override
     public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
-        String name = uri.getPathSegments().get(0);
-        SharedPreferences.Editor editor = getContext().getSharedPreferences(name, Context.MODE_PRIVATE).edit();
+        List<String> paths = uri.getPathSegments();
+        String name = paths.get(0);
+        boolean inMemory = Integer.parseInt(paths.get(1)) == TreasurePreferences.MODE_IN_MEMORY;
         boolean clear = Boolean.parseBoolean(uri.getQueryParameter(TreasureContract.PARAM_CLEAR));
-        if (clear) {
-            editor.clear();
+        HashMap<String, Object> memoryPreferences = null;
+        SharedPreferences.Editor editor = null;
+        if (inMemory) {
+            memoryPreferences = getMemoryPreferences(name);
+        } else {
+            editor = getContext().getSharedPreferences(name, Context.MODE_PRIVATE).edit();
         }
-        ArrayList<String> modifiedKeys = new ArrayList<String>();
+        if (clear) {
+            if (inMemory) {
+                memoryPreferences.clear();
+            } else {
+                editor.clear();
+            }
+        }
+        ArrayList<String> modifiedKeys = new ArrayList<>();
         for (Map.Entry<String, Object> entry : values.valueSet()) {
             String key = entry.getKey();
             Object value = entry.getValue();
-            if (value == null) {
-                editor.remove(key);
-            } else if (value instanceof String) {
-                editor.putString(key, (String) value);
-            } else if (value instanceof Integer) {
-                editor.putInt(key, (int) value);
-            } else if (value instanceof Long) {
-                editor.putLong(key, (long) value);
-            } else if (value instanceof Float) {
-                editor.putFloat(key, (float) value);
-            } else if (value instanceof Boolean) {
-                editor.putBoolean(key, (boolean) value);
+            if (inMemory) {
+                if (value == null) {
+                    memoryPreferences.remove(key);
+                } else {
+                    memoryPreferences.put(key, value);
+                }
+            } else {
+                if (value == null) {
+                    editor.remove(key);
+                } else if (value instanceof String) {
+                    editor.putString(key, (String) value);
+                } else if (value instanceof Integer) {
+                    editor.putInt(key, (int) value);
+                } else if (value instanceof Long) {
+                    editor.putLong(key, (long) value);
+                } else if (value instanceof Float) {
+                    editor.putFloat(key, (float) value);
+                } else if (value instanceof Boolean) {
+                    editor.putBoolean(key, (boolean) value);
+                }
             }
             modifiedKeys.add(key);
         }
@@ -242,17 +306,23 @@ public class TreasureProvider extends ContentProvider {
             try {
                 JSONArray stringSetValueArray = new JSONArray(selection);
                 for (int i = 0; i < selectionArgs.length; i++) {
-                    editor.putStringSet(selectionArgs[i], jsonArrayToStringSet(stringSetValueArray.getJSONArray(i)));
+                    if (inMemory) {
+                        memoryPreferences.put(selectionArgs[i], jsonArrayToStringSet(stringSetValueArray.getJSONArray(i)));
+                    } else {
+                        editor.putStringSet(selectionArgs[i], jsonArrayToStringSet(stringSetValueArray.getJSONArray(i)));
+                    }
                     modifiedKeys.add(selectionArgs[i]);
                 }
             } catch (JSONException e) {
                 e.printStackTrace();
             }
         }
-        if (Boolean.parseBoolean(uri.getQueryParameter(TreasureContract.PARAM_IMMEDIATELY))) {
-            editor.commit();
-        } else {
-            editor.apply();
+        if (!inMemory) {
+            if (Boolean.parseBoolean(uri.getQueryParameter(TreasureContract.PARAM_IMMEDIATELY))) {
+                editor.commit();
+            } else {
+                editor.apply();
+            }
         }
 
         //notify listeners
@@ -261,7 +331,7 @@ public class TreasureProvider extends ContentProvider {
             synchronized (mListeners) {
                 HashMap<String, Integer> listeners = mListeners.get(name);
                 if (listeners != null) {
-                    keySet = new HashSet<String>(listeners.keySet());
+                    keySet = new HashSet<>(listeners.keySet());
                 }
             }
             if (keySet != null) {
@@ -280,8 +350,20 @@ public class TreasureProvider extends ContentProvider {
         return 0;
     }
 
+    private synchronized HashMap<String, Object> getMemoryPreferences(String name) {
+        if (mMemoryStorage == null) {
+            mMemoryStorage = new HashMap<>();
+        }
+        HashMap<String, Object> memoryPreferences = mMemoryStorage.get(name);
+        if (memoryPreferences == null) {
+            memoryPreferences = new HashMap<>();
+            mMemoryStorage.put(name, memoryPreferences);
+        }
+        return memoryPreferences;
+    }
+
     public static HashSet<String> jsonArrayToStringSet(JSONArray array) {
-        HashSet<String> set = new HashSet<String>();
+        HashSet<String> set = new HashSet<>();
         try {
             for (int i = array.length() - 1; i >= 0; i--) {
                 set.add(array.getString(i));
