@@ -19,14 +19,14 @@ public final class TreasureContract {
     private static String sAuthority;
     private static Uri sAuthorityUri;
 
-    public static String getAuthority(Context context) {
+    static synchronized String getAuthority(Context context) {
         if (TextUtils.isEmpty(sAuthority)) {
             sAuthority = context.getString(R.string.org_xjy_android_treasure_authority);
         }
         return sAuthority;
     }
 
-    public static Uri getAuthorityUri(Context context) {
+    public static synchronized Uri getAuthorityUri(Context context) {
         if (sAuthorityUri == null) {
             sAuthorityUri = Uri.parse("content://" + getAuthority(context));
         }
