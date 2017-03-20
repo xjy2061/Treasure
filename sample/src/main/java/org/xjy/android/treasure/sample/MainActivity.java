@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, sharedPreferences.getAll().get(key).toString());
             }
         };
-        mTreasurePreferences.registerOnSharedPreferenceChangeListener(mOnSharedPreferenceChangeListener, new ArrayList<String>(Arrays.asList("b", "f", "i", "l", "s", "ss")));
+        mTreasurePreferences.registerOnSharedPreferenceChangeListener(mOnSharedPreferenceChangeListener, Arrays.asList("b", "f", "i", "l", "s", "ss"));
     }
 
     @SuppressLint("NewApi")

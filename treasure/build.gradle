@@ -1,15 +1,14 @@
 apply plugin: 'com.android.library'
-apply plugin: 'maven'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.1"
+    compileSdkVersion COMPILE_SDK_VERSION.toInteger()
+    buildToolsVersion "${BUILD_TOOLS_VERSION}"
 
     defaultConfig {
-        minSdkVersion 9
-        targetSdkVersion 25
+        minSdkVersion MIN_SDK_VERSION
+        targetSdkVersion TARGET_SDK_VERSION
         versionCode 1
-        versionName "1.0.0"
+        versionName "${VERSION_NAME}"
 
         resValue "string", "org_xjy_android_treasure_authority", "org.xjy.android.treasure"
     }
@@ -23,9 +22,3 @@ android {
 }
 
 apply from: rootProject.file('publish.gradle')
-
-task sourcesJar(type: Jar) {
-    from android.sourceSets.main.java.srcDirs
-    classifier = 'sources'
-}
-artifacts.add('archives', sourcesJar)

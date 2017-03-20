@@ -1,15 +1,15 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.0"
+    compileSdkVersion COMPILE_SDK_VERSION.toInteger()
+    buildToolsVersion "${BUILD_TOOLS_VERSION}"
 
     defaultConfig {
         applicationId "org.xjy.android.treasure.sample"
-        minSdkVersion 9
-        targetSdkVersion 25
+        minSdkVersion MIN_SDK_VERSION
+        targetSdkVersion TARGET_SDK_VERSION
         versionCode 1
-        versionName "1.0"
+        versionName "${VERSION_NAME}"
 
         resValue "string", "org_xjy_android_treasure_authority", "org.xjy.android.treasure.sample"
     }
@@ -23,5 +23,5 @@ android {
 
 dependencies {
     compile project(':treasure')
-    compile 'com.android.support:appcompat-v7:25.0.0'
+    compile 'com.android.support:appcompat-v7:25.3.0'
 }

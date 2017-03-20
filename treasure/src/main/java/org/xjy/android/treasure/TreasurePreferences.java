@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -40,7 +41,7 @@ public class TreasurePreferences implements SharedPreferences {
     private Context mContext;
     private String mName;
     private int mMode;
-    private final WeakHashMap<OnSharedPreferenceChangeListener, ArrayList<String>> mListeners = new WeakHashMap<>();
+    private final WeakHashMap<OnSharedPreferenceChangeListener, List<String>> mListeners = new WeakHashMap<>();
     private BroadcastReceiver mPreferencesChangeReceiver;
     private static final HashMap<String, TreasurePreferences> sPrefers = new HashMap<>();
 
@@ -281,7 +282,7 @@ public class TreasurePreferences implements SharedPreferences {
 
     /**
      * This method is expensive.
-     * You should use {@link #registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener, ArrayList keys)} instead to achieve performance.
+     * You should use {@link #registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener, List keys)} instead to achieve performance.
      * */
     @Deprecated
     @Override
@@ -315,7 +316,7 @@ public class TreasurePreferences implements SharedPreferences {
      * @param listener The callback that will run.
      * @param keys The keys that be listened.
      * */
-    public void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener, ArrayList<String> keys) {
+    public void registerOnSharedPreferenceChangeListener(OnSharedPreferenceChangeListener listener, List<String> keys) {
         if (listener == null || keys == null || keys.size() == 0) {
             return;
         }
@@ -348,7 +349,7 @@ public class TreasurePreferences implements SharedPreferences {
         }
         String[] keys = null;
         synchronized(mListeners) {
-            ArrayList<String> keyList = mListeners.remove(listener);
+            List<String> keyList = mListeners.remove(listener);
             if (keyList != null) {
                 keys = keyList.toArray(new String[keyList.size()]);
             }
@@ -382,8 +383,8 @@ public class TreasurePreferences implements SharedPreferences {
                         ArrayList<String> modifiedKeys = (ArrayList<String>) intent.getSerializableExtra(TreasureProvider.EXTRA_KEYS);
                         ArrayList<Pair<OnSharedPreferenceChangeListener, String>> listeners = new ArrayList<>();
                         synchronized (mListeners) {
-                            for (Map.Entry<OnSharedPreferenceChangeListener, ArrayList<String>> entry : mListeners.entrySet()) {
-                                ArrayList<String> keys = entry.getValue();
+                            for (Map.Entry<OnSharedPreferenceChangeListener, List<String>> entry : mListeners.entrySet()) {
+                                List<String> keys = entry.getValue();
                                 for (int i = modifiedKeys.size() - 1; i >= 0; i--) {
                                     String key = modifiedKeys.get(i);
                                     if (keys == null || keys.contains(key)) {
