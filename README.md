@@ -16,7 +16,7 @@ Add following line to the `dependencies` section of your `build.gradle` file:
 compile 'org.xjy.android.treasure:treasure:1.0.0'
 ```
 
-Then set the authority of `ContentProvider` used by treasure like this: 
+Then set the authority of `ContentProvider` used by treasure in the `android`-`defaultConfig` section of your `build.gradle` file like this: 
 
 ```gradle
 android {
@@ -28,6 +28,8 @@ android {
     }
 }
 ```
+
+To avoid conflict with other `ContentProvoder`, the best practice is named your authority with your package name, for instance: `org.xjy.android.treasure.sample`
 
 Now you can use treasure in your code. First of all get a `TreasurePreferences` instant with a name, and then you can use the instant to read or write data.
 
