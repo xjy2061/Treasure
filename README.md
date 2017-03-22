@@ -12,8 +12,21 @@ Treasure also supports:
 ## Getting start
 Add following line to the `dependencies` section of your `build.gradle` file:
 
-```
+```gradle
 compile 'org.xjy.android.treasure:treasure:1.0.0'
+```
+
+Then set the authority of `ContentProvider` used by treasure like this: 
+
+```gradle
+android {
+
+    defaultConfig {
+        ...
+
+        resValue "string", "org_xjy_android_treasure_authority", "your authority"
+    }
+}
 ```
 
 Now you can use treasure in your code. First of all get a `TreasurePreferences` instant with a name, and then you can use the instant to read or write data.
