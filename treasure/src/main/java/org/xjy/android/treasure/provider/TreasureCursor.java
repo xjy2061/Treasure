@@ -3,7 +3,7 @@ package org.xjy.android.treasure.provider;
 import android.database.AbstractCursor;
 import android.database.CursorWindow;
 
-public class TreasureCursor extends AbstractCursor {
+class TreasureCursor extends AbstractCursor {
     private static final int FIELD_TYPE_NULL = 0;
     private static final int FIELD_TYPE_INTEGER = 1;
     private static final int FIELD_TYPE_FLOAT = 2;
@@ -13,7 +13,7 @@ public class TreasureCursor extends AbstractCursor {
     private int mCount;
     private Object mValue;
 
-    public TreasureCursor(int count, Object value) {
+    TreasureCursor(int count, Object value) {
         mCount = count;
         mValue = value;
     }
@@ -46,8 +46,7 @@ public class TreasureCursor extends AbstractCursor {
     @Override
     public long getLong(int column) {
         if (mValue instanceof Integer) {
-            int i = (int) mValue;
-            return i;
+            return (int) mValue;
         }
         return (long) mValue;
     }
@@ -60,8 +59,7 @@ public class TreasureCursor extends AbstractCursor {
     @Override
     public double getDouble(int column) {
         if (mValue instanceof Float) {
-            float f = (float) mValue;
-            return f;
+            return (float) mValue;
         }
         return (double) mValue;
     }

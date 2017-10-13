@@ -361,7 +361,7 @@ public class TreasureProvider extends ContentProvider {
                 if (modifiedKeys.size() > 0) {
                     Intent intent = new Intent(ACTION_PREFERENCES_CHANGE);
                     intent.putExtra(EXTRA_NAME, name);
-                    intent.putExtra(EXTRA_KEYS, modifiedKeys);
+                    intent.putStringArrayListExtra(EXTRA_KEYS, modifiedKeys);
                     getContext().sendBroadcast(intent);
                 }
             }

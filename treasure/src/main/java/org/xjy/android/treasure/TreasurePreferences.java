@@ -75,7 +75,7 @@ public class TreasurePreferences implements SharedPreferences {
             Uri uri = buildUri(TreasureContract.QUERY_GET_ALL, null);
             ContentResolver contentResolver = mContext.getContentResolver();
             client = contentResolver.acquireContentProviderClient(uri);
-            ContentProvider localProvider = client.getLocalContentProvider();
+            ContentProvider localProvider = client != null ? client.getLocalContentProvider() : null;
             cursor = localProvider != null ? localProvider.query(uri, null, null, null, null) : contentResolver.query(uri, null, null, null, null);
             if (cursor != null) {
                 while (cursor.moveToNext()) {
@@ -129,7 +129,7 @@ public class TreasurePreferences implements SharedPreferences {
             Uri uri = buildUri(TreasureContract.QUERY_GET, null);
             ContentResolver contentResolver = mContext.getContentResolver();
             client = contentResolver.acquireContentProviderClient(uri);
-            ContentProvider localProvider = client.getLocalContentProvider();
+            ContentProvider localProvider = client != null ? client.getLocalContentProvider() : null;
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, null, null, TYPE_STRING + "") : contentResolver.query(uri, new String[]{key}, null, null, TYPE_STRING + "");
             if (cursor != null && cursor.moveToNext()) {
                 return cursor.getString(0);
@@ -151,7 +151,7 @@ public class TreasurePreferences implements SharedPreferences {
             Uri uri = buildUri(TreasureContract.QUERY_GET, null);
             ContentResolver contentResolver = mContext.getContentResolver();
             client = contentResolver.acquireContentProviderClient(uri);
-            ContentProvider localProvider = client.getLocalContentProvider();
+            ContentProvider localProvider = client != null ? client.getLocalContentProvider() : null;
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, null, null, TYPE_STRING_SET + "") : contentResolver.query(uri, new String[]{key}, null, null, TYPE_STRING_SET + "");
             if (cursor != null && cursor.moveToNext()) {
                 return TreasureProvider.jsonArrayToStringSet(new JSONArray(cursor.getString(0)));
@@ -173,7 +173,7 @@ public class TreasurePreferences implements SharedPreferences {
             Uri uri = buildUri(TreasureContract.QUERY_GET, null);
             ContentResolver contentResolver = mContext.getContentResolver();
             client = contentResolver.acquireContentProviderClient(uri);
-            ContentProvider localProvider = client.getLocalContentProvider();
+            ContentProvider localProvider = client != null ? client.getLocalContentProvider() : null;
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, defValue + "", null, TYPE_INT + "") : contentResolver.query(uri, new String[]{key}, defValue + "", null, TYPE_INT + "");
             if (cursor != null && cursor.moveToNext()) {
                 return cursor.getInt(0);
@@ -195,7 +195,7 @@ public class TreasurePreferences implements SharedPreferences {
             Uri uri = buildUri(TreasureContract.QUERY_GET, null);
             ContentResolver contentResolver = mContext.getContentResolver();
             client = contentResolver.acquireContentProviderClient(uri);
-            ContentProvider localProvider = client.getLocalContentProvider();
+            ContentProvider localProvider = client != null ? client.getLocalContentProvider() : null;
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, defValue + "", null, TYPE_LONG + "") : contentResolver.query(uri, new String[]{key}, defValue + "", null, TYPE_LONG + "");
             if (cursor != null && cursor.moveToNext()) {
                 return cursor.getLong(0);
@@ -217,7 +217,7 @@ public class TreasurePreferences implements SharedPreferences {
             Uri uri = buildUri(TreasureContract.QUERY_GET, null);
             ContentResolver contentResolver = mContext.getContentResolver();
             client = contentResolver.acquireContentProviderClient(uri);
-            ContentProvider localProvider = client.getLocalContentProvider();
+            ContentProvider localProvider = client != null ? client.getLocalContentProvider() : null;
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, defValue + "", null, TYPE_FLOAT + "") : contentResolver.query(uri, new String[]{key}, defValue + "", null, TYPE_FLOAT + "");
             if (cursor != null && cursor.moveToNext()) {
                 return cursor.getFloat(0);
@@ -239,7 +239,7 @@ public class TreasurePreferences implements SharedPreferences {
             Uri uri = buildUri(TreasureContract.QUERY_GET, null);
             ContentResolver contentResolver = mContext.getContentResolver();
             client = contentResolver.acquireContentProviderClient(uri);
-            ContentProvider localProvider = client.getLocalContentProvider();
+            ContentProvider localProvider = client != null ? client.getLocalContentProvider() : null;
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, defValue + "", null, TYPE_BOOLEAN + "") : contentResolver.query(uri, new String[]{key}, defValue + "", null, TYPE_BOOLEAN + "");
             if (cursor != null && cursor.moveToNext()) {
                 return cursor.getInt(0) == 1;
@@ -261,7 +261,7 @@ public class TreasurePreferences implements SharedPreferences {
             Uri uri = buildUri(TreasureContract.QUERY_CONTAINS, null);
             ContentResolver contentResolver = mContext.getContentResolver();
             client = contentResolver.acquireContentProviderClient(uri);
-            ContentProvider localProvider = client.getLocalContentProvider();
+            ContentProvider localProvider = client != null ? client.getLocalContentProvider() : null;
             cursor = localProvider != null ? localProvider.query(uri, new String[]{key}, null, null, null) : contentResolver.query(uri, new String[]{key}, null, null, null);
             if (cursor != null && cursor.moveToNext()) {
                 return cursor.getInt(0) == 1;
@@ -299,7 +299,7 @@ public class TreasurePreferences implements SharedPreferences {
             Uri uri = buildUri(TreasureContract.REGISTER, null);
             ContentResolver contentResolver = mContext.getContentResolver();
             client = contentResolver.acquireContentProviderClient(uri);
-            ContentProvider localProvider = client.getLocalContentProvider();
+            ContentProvider localProvider = client != null ? client.getLocalContentProvider() : null;
             ContentValues values = new ContentValues();
             values.put(TreasureProvider.KEYS, (String) null);
             if (localProvider != null) {
@@ -329,7 +329,7 @@ public class TreasurePreferences implements SharedPreferences {
             Uri uri = buildUri(TreasureContract.REGISTER, null);
             ContentResolver contentResolver = mContext.getContentResolver();
             client = contentResolver.acquireContentProviderClient(uri);
-            ContentProvider localProvider = client.getLocalContentProvider();
+            ContentProvider localProvider = client != null ? client.getLocalContentProvider() : null;
             ContentValues values = new ContentValues();
             values.put(TreasureProvider.KEYS, new JSONArray(keys).toString());
             if (localProvider != null) {
@@ -362,7 +362,7 @@ public class TreasurePreferences implements SharedPreferences {
             Uri uri = buildUri(TreasureContract.UNREGISTER, null);
             ContentResolver contentResolver = mContext.getContentResolver();
             client = contentResolver.acquireContentProviderClient(uri);
-            ContentProvider localProvider = client.getLocalContentProvider();
+            ContentProvider localProvider = client != null ? client.getLocalContentProvider() : null;
             if (localProvider != null) {
                 localProvider.delete(uri, null, keys);
             } else {
@@ -380,7 +380,7 @@ public class TreasurePreferences implements SharedPreferences {
                 public void onReceive(Context context, Intent intent) {
                     String name = intent.getStringExtra(TreasureProvider.EXTRA_NAME);
                     if (mName.equals(name)) {
-                        ArrayList<String> modifiedKeys = (ArrayList<String>) intent.getSerializableExtra(TreasureProvider.EXTRA_KEYS);
+                        ArrayList<String> modifiedKeys = intent.getStringArrayListExtra(TreasureProvider.EXTRA_KEYS);
                         ArrayList<Pair<OnSharedPreferenceChangeListener, String>> listeners = new ArrayList<>();
                         synchronized (mListeners) {
                             for (Map.Entry<OnSharedPreferenceChangeListener, List<String>> entry : mListeners.entrySet()) {
@@ -543,7 +543,7 @@ public class TreasurePreferences implements SharedPreferences {
                     Uri uri = buildUri(TreasureContract.UPDATE, params);
                     ContentResolver contentResolver = mContext.getContentResolver();
                     client = contentResolver.acquireContentProviderClient(uri);
-                    ContentProvider localProvider = client.getLocalContentProvider();
+                    ContentProvider localProvider = client != null ? client.getLocalContentProvider() : null;
                     if (localProvider != null) {
                         localProvider.update(uri, contentValues, stringSetValueArray.toString(), stringSetKeyList.size() > 0 ? stringSetKeyList.toArray(new String[stringSetKeyList.size()]) : null);
                     } else {

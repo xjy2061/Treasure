@@ -23,5 +23,5 @@ android {
 
 dependencies {
     compile project(':treasure')
-    compile 'com.android.support:appcompat-v7:25.3.0'
+    compile 'com.android.support:appcompat-v7:25.3.1'
 }
