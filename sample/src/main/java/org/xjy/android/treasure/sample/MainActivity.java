@@ -9,7 +9,6 @@ import android.util.Log;
 
 import org.xjy.android.treasure.TreasurePreferences;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -31,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
         HashSet<String> ss = new HashSet<>();
         ss.add("s1");
         ss.add("s2");
-        mTreasurePreferences.edit().putBoolean("b", true).putFloat("f", 1.0f).putInt("i", 1).putLong("l", 1).putString("s", "s").putStringSet("ss", ss).commit();
+        mTreasurePreferences.edit().putBoolean("b", true).putFloat("f", 1.0f).putInt("i", 1).putLong("l", 1).putString("s", "s").putStringSet("ss", ss).apply();
 
         mOnSharedPreferenceChangeListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
             @Override
@@ -43,7 +42,6 @@ public class MainActivity extends AppCompatActivity {
         mTreasurePreferences.registerOnSharedPreferenceChangeListener(mOnSharedPreferenceChangeListener, Arrays.asList("b", "f", "i", "l", "s", "ss"));
     }
 
-    @SuppressLint("NewApi")
     @Override
     protected void onResume() {
         super.onResume();

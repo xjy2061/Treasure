@@ -366,6 +366,7 @@ public class TreasurePreferences implements SharedPreferences {
             }
             if (mListeners.size() == 0) {
                 mContext.unregisterReceiver(mPreferencesChangeReceiver);
+                mPreferencesChangeReceiver = null;
             }
         }
         ContentProviderClient client = null;

@@ -42,17 +42,6 @@ afterEvaluate { project ->
         scmUrl = 'https://github.com/xjy2061/Treasure.git'
         scmConnection = 'scm:git:https://github.com/xjy2061/Treasure.git'
         scmDeveloperConnection = 'scm:git:git@github.com:xjy2061/Treasure.git'
-
-        developerId = 'xjy2061'
-        developerName = 'xjy2061'
-
-        projectLicenses = {
-            license {
-                name 'The Apache Software License, Version 2.0'
-                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                distribution 'repo'
-            }
-        }
     }
 
     def pomConfig = {
@@ -62,12 +51,18 @@ afterEvaluate { project ->
             developerConnection scmDeveloperConnection
         }
 
-        licenses projectLicenses
+        licenses {
+            license {
+                name 'The Apache Software License, Version 2.0'
+                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                distribution 'repo'
+            }
+        }
 
         developers {
             developer {
-                id developerId
-                name developerName
+                id 'xjy2061'
+                name 'xjy2061'
             }
         }
     }
@@ -115,7 +110,7 @@ afterEvaluate { project ->
             websiteUrl = projectUrl
             issueTrackerUrl = issuesUrl
             vcsUrl = scmUrl
-            licenses = projectLicenses
+            licenses = ['Apache-2.0']
             dryRun = properties.hasProperty("dryRun") ? properties.getProperty("dryRun") : false
             override = true
             publish = true
