@@ -13,7 +13,7 @@ Treasure also supports:
 Add following line to the `dependencies` section of your `build.gradle` file:
 
 ```gradle
-compile 'org.xjy.android.treasure:treasure:1.0.0'
+compile 'org.xjy.android.treasure:treasure:1.0.1'
 ```
 
 Then set the authority of `ContentProvider` used by treasure in the `android`-`defaultConfig` section of your `build.gradle` file like this: 
