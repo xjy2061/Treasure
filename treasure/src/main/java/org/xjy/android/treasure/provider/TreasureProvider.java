@@ -54,7 +54,7 @@ public class TreasureProvider extends ContentProvider {
     }
 
     @Override
-    public Cursor query(@SuppressWarnings("NullableProblems") Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
+    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sortOrder) {
         Cursor cursor = null;
         List<String> paths = uri.getPathSegments();
         String name = paths.get(0);
@@ -201,7 +201,7 @@ public class TreasureProvider extends ContentProvider {
     }
 
     @Override
-    public Uri insert(@SuppressWarnings("NullableProblems") Uri uri, ContentValues values) {
+    public Uri insert(Uri uri, ContentValues values) {
         String name = uri.getPathSegments().get(0);
         String keys = values.getAsString(KEYS);
         try {
@@ -246,7 +246,7 @@ public class TreasureProvider extends ContentProvider {
     }
 
     @Override
-    public int delete(@SuppressWarnings("NullableProblems") Uri uri, String selection, String[] selectionArgs) {
+    public int delete(Uri uri, String selection, String[] selectionArgs) {
         String name = uri.getPathSegments().get(0);
         synchronized (mListeners) {
             HashMap<String, Integer> listeners = mListeners.get(name);
@@ -273,7 +273,7 @@ public class TreasureProvider extends ContentProvider {
 
     @SuppressLint("ApplySharedPref")
     @Override
-    public int update(@SuppressWarnings("NullableProblems") Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+    public int update(Uri uri, ContentValues values, String selection, String[] selectionArgs) {
         List<String> paths = uri.getPathSegments();
         String name = paths.get(0);
         boolean inMemory = Integer.parseInt(paths.get(1)) == TreasurePreferences.MODE_IN_MEMORY;
@@ -363,6 +363,7 @@ public class TreasureProvider extends ContentProvider {
                 }
                 if (modifiedKeys.size() > 0) {
                     Intent intent = new Intent(ACTION_PREFERENCES_CHANGE);
+                    intent.setPackage(mContext.getPackageName());
                     intent.putExtra(EXTRA_NAME, name);
                     intent.putStringArrayListExtra(EXTRA_KEYS, modifiedKeys);
                     mContext.sendBroadcast(intent);

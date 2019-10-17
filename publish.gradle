@@ -72,7 +72,7 @@ afterEvaluate { project ->
             artifactId POM_ARTIFACT_ID
             artifact androidJavadocJar
             artifact androidSourcesJar
-            artifact bundleRelease
+            artifact bundleReleaseAar
 
             pom {
                 packaging 'aar'
