@@ -66,4 +66,4 @@ mOnSharedPreferenceChangeListener = new SharedPreferences.OnSharedPreferenceChan
 mTreasurePreferences.registerOnSharedPreferenceChangeListener(mOnSharedPreferenceChangeListener, Arrays.asList("i", "s"));
 ```
 
-**Note**: if you register key concerned listener in your `application` class without unregister it, make sure keep a listener reference in your `application` instant.
+**Note**: if you register key concerned listener in your `application` class without unregister it, make sure keep a listener reference in your `application` instance.
